@@ -1,0 +1,607 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>生日快乐</title>
+    <style>
+        *{margin:0;padding:0;box-sizing:border-box}
+        body{
+            font-family:"Microsoft Yahei",sans-serif;
+            background:linear-gradient(135deg,#ffe0ec,#e0f3ff);
+            color:#444;
+            overflow-x:hidden;
+        }
+
+        #passwordPage{
+            position:fixed;inset:0;
+            background:linear-gradient(135deg,#ffd6e7,#cdeeff);
+            display:flex;align-items:center;justify-content:center;
+            z-index:999;
+            transition: opacity 0.4s ease;
+        }
+        .password-box{
+            background:#fff;padding:40px;border-radius:20px;
+            box-shadow:0 15px 40px rgba(255,105,135,0.25);
+            text-align:center;width:90%;max-width:360px;
+        }
+        .password-box h2{color:#ff6b9d;margin-bottom:12px}
+        .password-box p{color:#777;margin-bottom:20px}
+        .password-box input{
+            width:100%;padding:14px;border:2px solid #ffb3c6;
+            border-radius:12px;font-size:18px;text-align:center;
+            letter-spacing:6px;margin-bottom:16px;outline:none;
+        }
+        .password-box button{
+            padding:12px 30px;background:#ff6b9d;color:#fff;
+            border:none;border-radius:30px;font-size:16px;cursor:pointer;
+        }
+        #tip{color:#ff4785;margin-top:12px;min-height:20px}
+
+        #loadingPage{
+            position:fixed;inset:0;
+            background:linear-gradient(135deg,#ffd6e7,#cdeeff);
+            display:flex;align-items:center;justify-content:center;
+            flex-direction:column;
+            z-index:900;
+            opacity:0;
+            pointer-events:none;
+            transition: opacity 0.4s ease;
+        }
+        .loading-title{
+            color:#ff4785;
+            font-size:24px;
+            margin-bottom:30px;
+            letter-spacing:2px;
+        }
+        .heart-progress{
+            position:relative;
+            width:280px;
+            height:44px;
+            border-radius:30px;
+            background:rgba(255,255,255,0.6);
+            border:3px solid #ff9ebb;
+            overflow:hidden;
+        }
+        .heart-fill{
+            position:absolute;
+            left:0;top:0;
+            height:100%;
+            width:0%;
+            background:linear-gradient(90deg,#ff6b9d,#ff4785,#ffd93d);
+            background-size:200% 100%;
+            animation:shine 1.2s linear infinite;
+            border-radius:30px;
+            transition:width 0.2s linear;
+        }
+        @keyframes shine{
+            0%{background-position:0% 0}
+            100%{background-position:200% 0}
+        }
+        .heart-icon{
+            position:absolute;
+            right:12px;
+            top:50%;
+            transform:translateY(-50%);
+            font-size:22px;
+            color:#fff;
+            text-shadow:0 0 6px rgba(255,255,255,0.8);
+        }
+        .loading-text{
+            margin-top:20px;
+            color:#ff6b9d;
+            font-size:15px;
+            letter-spacing:4px;
+        }
+
+        #homePage{
+            min-height:100vh;padding:40px 20px;
+            position:relative;
+            z-index:2;
+            opacity:0;
+            pointer-events:none;
+            transition: opacity 0.6s ease;
+        }
+        .title{text-align:center;color:#ff4785;font-size:34px;margin-bottom:20px}
+        .subtitle{text-align:center;color:#777;margin-bottom:30px}
+        .book{max-width:900px;margin:0 auto}
+        .page{
+            background:#fff;border-radius:18px;padding:30px;
+            box-shadow:0 10px 30px rgba(0,0,0,0.12);
+            display:none;
+        }
+        .page.active{display:block;}
+        .page.animate{
+            animation:fadeIn 0.8s ease;
+        }
+        @keyframes fadeIn{
+            from{opacity:0;transform:translateY(20px)}
+            to{opacity:1;transform:translateY(0)}
+        }
+        .photo-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:20px}
+        .photo-grid img{
+            width:100%;height:240px;object-fit:cover;border-radius:14px;
+            box-shadow:0 6px 16px rgba(0,0,0,0.12);
+            background:#f8f8f8;
+        }
+        .letter{background:#fffafb;padding:30px;border-radius:16px;border-left:5px solid #ff9ebb;line-height:2;font-size:17px}
+        .letter p{text-indent: 2em;margin:12px 0;}
+        .letter h2{color:#ff4785;margin-bottom:20px}
+        .sign{text-align:right;margin-top:30px;color:#888}
+        .nav{text-align:center;margin-top:30px}
+        .nav button{padding:12px 28px;background:#ff6b9d;color:#fff;border:none;border-radius:30px;font-size:16px;cursor:pointer;margin:0 8px}
+        .music-btn{position:fixed;top:20px;right:20px;background:#fff;border:none;border-radius:50%;width:50px;height:50px;font-size:24px;box-shadow:0 6px 16px rgba(0,0,0,0.12);cursor:pointer;z-index:10;display:none;}
+
+        /* 音乐提示页 */
+        .tip-page{
+            text-align:center;
+            padding:60px 20px;
+            font-size:20px;
+            color:#ff6b9d;
+            line-height:2.2;
+        }
+
+        /* 拼图页面 */
+        .puzzle-wrap{text-align:center}
+        .puzzle-title{font-size:22px;color:#ff4785;margin-bottom:12px}
+        .puzzle-desc{color:#777;margin-bottom:20px}
+        .puzzle-box{
+            width:300px;height:300px;
+            margin:0 auto 20px;
+            display:grid;
+            grid-template-columns:1fr 1fr;
+            grid-template-rows:1fr 1fr;
+            gap:4px;
+            border:3px solid #ffb3c6;
+            background:#ffb3c6;
+        }
+        .puzzle-item{
+            background:#ffe8ef;
+            display:flex;
+            align-items:center;
+            justify-content:center;
+            font-size:14px;
+            color:#ff6b9d;
+            cursor:grab;
+            user-select:none;
+            overflow:hidden;
+        }
+        .puzzle-item img{width:100%;height:100%;object-fit:cover;pointer-events:none}
+        .puzzle-slot{
+            width:300px;height:300px;
+            margin:0 auto 20px;
+            display:grid;
+            grid-template-columns:1fr 1fr;
+            grid-template-rows:1fr 1fr;
+            gap:4px;
+            border:3px dashed #ffb3c6;
+            background:#fff7fa;
+        }
+        .puzzle-slot .slot{
+            border:1px solid #ffd4e2;
+            display:flex;
+            align-items:center;
+            justify-content:center;
+            overflow:hidden;
+        }
+        .puzzle-slot .slot img{
+            width:100%;
+            height:100%;
+            object-fit:cover;
+            pointer-events:none;
+        }
+        .puzzle-success{
+            color:#ff4785;font-size:20px;margin-top:15px;display:none;
+        }
+
+        /* 日历页样式 */
+        .calendar-page{text-align:center;padding:40px 20px}
+        .calendar-title{color:#ff4785;font-size:24px;margin-bottom:10px}
+        .calendar-sub{color:#777;margin-bottom:30px}
+        .calendar-box{
+            width:260px;margin:0 auto;background:#fff;
+            border-radius:20px;box-shadow:0 10px 30px rgba(255,105,135,0.2);
+            overflow:hidden;border:3px solid #ff9ebb;
+        }
+        .calendar-head{
+            background:linear-gradient(135deg,#ff6b9d,#ff4785);
+            color:#fff;padding:14px;font-size:16px;letter-spacing:2px;
+        }
+        .calendar-body{padding:20px}
+        .calendar-year{font-size:14px;color:#999;margin-bottom:8px}
+        .calendar-week{font-size:14px;color:#777;margin-top:10px}
+
+        /* 翻牌核心样式 */
+        .flip-row{
+            display:flex;
+            justify-content:center;
+            gap:10px;
+            margin:10px 0;
+        }
+        .flip{
+            width:80px;
+            height:110px;
+            perspective:1000px;
+            position:relative;
+        }
+        .flip .card{
+            width:100%;
+            height:100%;
+            position:absolute;
+            transform-style:preserve-3d;
+            transition:transform 0.8s ease;
+        }
+        .flip .card.flipped{
+            transform:rotateX(-180deg);
+        }
+        .flip .face, .flip .back{
+            width:100%;
+            height:100%;
+            position:absolute;
+            top:0;left:0;
+            border-radius:14px;
+            display:flex;
+            align-items:center;
+            justify-content:center;
+            font-weight:bold;
+            backface-visibility:hidden;
+            box-shadow:0 8px 20px rgba(255,105,135,0.25);
+            font-family:"Microsoft Yahei",sans-serif;
+        }
+        .flip .face{
+            background:#fff;
+            color:#ff4785;
+            font-size:42px;
+            border:2px solid #ffb3c6;
+        }
+        .flip .back{
+            background:linear-gradient(135deg,#ff6b9d,#ff4785);
+            color:#fff;
+            font-size:42px;
+            transform:rotateX(180deg);
+        }
+
+        .days-count{
+            margin-top:30px;padding:20px;background:#fff2f7;
+            border-radius:16px;border:2px dashed #ff9ebb;
+        }
+        .days-count-num{font-size:48px;color:#ff4785;font-weight:bold}
+        .days-count-text{color:#777;margin-top:6px}
+
+        @media(max-width:600px){
+            .photo-grid{grid-template-columns:1fr}
+            .title{font-size:28px}
+            .puzzle-box,.puzzle-slot{width:240px;height:240px}
+            .flip{width:64px;height:90px}
+            .flip .face,.flip .back{font-size:34px}
+        }
+    </style>
+</head>
+<body>
+    <div id="passwordPage">
+        <div class="password-box">
+            <h2>🎂 生日惊喜 🎂</h2>
+            <p>输入六位密码才能打开</p>
+            <input type="text" id="passwordInput" maxlength="6">
+            <br>
+            <button id="passwordBtn">打开惊喜</button>
+            <p id="tip"></p>
+        </div>
+    </div>
+
+    <div id="loadingPage">
+        <div class="loading-title">正在为你准备惊喜</div>
+        <div class="heart-progress">
+            <div class="heart-fill" id="heartFill"></div>
+            <div class="heart-icon">💖</div>
+        </div>
+        <div class="loading-text" id="loadingText">0%</div>
+    </div>
+
+    <button class="music-btn" id="musicBtn">🎵</button>
+
+    <div id="homePage">
+        <h1 class="title">🎂 生日快乐，许瀚文 🎂</h1>
+        <p class="subtitle">有些话，想一页一页讲给你听</p>
+
+        <div class="book">
+            <!-- 第1页：音乐提示页 -->
+            <div class="page" id="page1">
+                <div class="tip-page">
+                    <p>✨ 记得先点开右上角的音乐按钮</p>
+                    <p>这是我精心挑选的bgm</p>
+                </div>
+            </div>
+
+            <!-- 第2页：拼图互动页（顺序：1,3,2,0） -->
+            <div class="page" id="page2">
+                <div class="puzzle-wrap">
+                    <div class="puzzle-title">🧩 拼图环节</div>
+                    <div class="puzzle-desc">把碎片拖到虚线框里，拼好就可以继续啦</div>
+                    <div class="puzzle-box" id="puzzleSource">
+                        <div class="puzzle-item" data-id="1"><img src="puzzle1.jpg"></div>
+                        <div class="puzzle-item" data-id="3"><img src="puzzle3.jpg"></div>
+                        <div class="puzzle-item" data-id="2"><img src="puzzle2.jpg"></div>
+                        <div class="puzzle-item" data-id="0"><img src="puzzle0.jpg"></div>
+                    </div>
+                    <div class="puzzle-slot" id="puzzleTarget">
+                        <div class="slot" data-slot="0"></div>
+                        <div class="slot" data-slot="1"></div>
+                        <div class="slot" data-slot="2"></div>
+                        <div class="slot" data-slot="3"></div>
+                    </div>
+                    <div class="puzzle-success" id="puzzleSuccess">🎉 恭喜恭喜！拼图完成，可以继续翻看咯</div>
+                </div>
+            </div>
+
+
+            <!-- 第3页：日历 + 认识天数 -->
+           <div class="page" id="page3">
+           <div class="calendar-page">
+           <div class="calendar-title">📅 今天是我们认识的第</div>
+           <div class="days-count">
+           <div class="days-count-num" id="daysCount">0</div>
+           <div class="days-count-text">天</div>
+           </div>
+
+           <div class="calendar-sub" style="margin-top:30px;">让爱 再回到原点</div>
+           <div class="calendar-box">
+          <div class="calendar-head" id="calendarHead">2021</div>
+          <div class="calendar-body">
+
+          <div class="flip-row" id="monthFlip">
+          <div class="flip">
+          <div class="card" id="monthCard">
+          <div class="face" id="monthFace">09</div>
+          <div class="back" id="monthBack">09</div>
+          </div>
+          </div>
+          </div>
+
+          <div class="flip-row" id="dayFlip">
+          <div class="flip">
+          <div class="card" id="dayCard">
+          <div class="face" id="dayFace">19</div>
+          <div class="back" id="dayBack">19</div>
+          </div>
+          </div>
+          </div>
+
+        <div class="calendar-week" id="calendarWeek">星期日</div>
+        </div>
+        </div>
+        </div>
+        </div>
+
+            <!-- 第4页：合照Ⅰ -->
+            <div class="page" id="page4">
+                <h2 style="color:#ff4785;text-align:center;margin-bottom:10px;">我们一起玩过了好多游戏</h2>
+                <p style="text-align:center;color:#777;">太多了，有的截图找不到了TVT</p>
+                <div class="photo-grid">
+                    <img src="pic1.jpg">
+                    <img src="pic2.jpg">
+                    <img src="pic3.jpg">
+                    <img src="pic4.jpg">
+                </div>
+            </div>
+
+            <!-- 第5页：合照Ⅱ -->
+            <div class="page" id="page5">
+                <h2 style="color:#ff4785;text-align:center;margin-bottom:10px;">我们每一年的合照</h2>
+                <p style="text-align:center;color:#777;">这回忆的漩涡~</p>
+                <div class="photo-grid">
+                    <img src="pic5.jpg">
+                    <img src="pic6.jpg">
+                    <img src="pic7.jpg">
+                    <img src="pic8.jpg">
+                </div>
+            </div>
+
+            <!-- 第6页：长信 -->
+            <div class="page" id="page6">
+                <div class="letter">
+                    <h2>一些想对你说的话</h2>
+                    <p style="text-indent:0;">亲爱的xhw：</p>
+                    <p>20岁生日快乐 时间过得好快呀 认识你的时候才初三 也才十四五岁 居然是好久之前的事情了。</p>
+                    <p>刚认识你的时候都还有点腼腆 想想还有点好笑 感觉莫名其妙就熟起来了 而且还很喜欢网上交流 像网友一样 结果呢才过了多久！根本没有美滋滋地享受够同桌生活就分开了 我完全哭了 当时不知道为啥就是特别想和你一起玩 虽然你身边有很多我很讨厌的人。有什么神奇的魔力吧大概！</p>
+                    <p>之前感觉自己太幼稚了 老是想些什么不准你交别的朋友 好像是啥子吧 因为你真是我的超级好的朋友 嘿嘿 其实最重要的是希望你开心 因为希望你不会遇到讨厌的人 这样你可以每天都很开心。</p>
+                    <p>感觉我们现在虽然也没有特别特别经常聊天 但是呢这样相处也挺好的 毕竟每天都有一万件事情要做 但是呢！！！如果你想找我分享各种事情 我肯定可以有时间的嗯对 而且我本身也经常有一万个消息都不回 所以真的已经非常没有敷衍你了！</p>
+                    <p>嗯还有就是你老是给我发什么说我有很多其他的朋友 完全不能这样说好吧！！你和别人聊天我也会有点吃醋吧！虽然我也不知道你们聊没聊 也没见你发我 但是你肯定和你对象有！但是也不一定 我什么都不知道好吧 完全瞎猜 但是真是有点觉得他在你心里占据了一部分我的位置！算了不说他了 搞不明白你们的事。</p>
+                    <p>哦对继续说前面的事 反正对我来说是很不一样的存在吧 特别是在高中 感觉有不一样的意义 毕竟也没谁因为坐飞机不能回我抖音发我一堆抖音视频吧！还要陪我玩幼稚的游戏 还要每天用短信聊天 真是付费聊天 好奢侈呀 唉！现在想想真是一段珍贵又不可复刻的经历呀</p>
+                    <p>用一句话说呢就是 你觉得为什么我要选这首歌当背景音乐呀<p>
+                    <p style="margin-top:28px;"><strong>因为你就是我要遇见的特别的人</strong></p>
+                    <p style="margin-top:28px;">生日快乐呀 希望你天天开心 所有的愿望都会实现 还有我很想你！</p>
+                    <p>感觉自己好厉害呀有没有 搞得还挺好看的吧这个网页^^然后就是 没有下一页啦 不用再翻页咯</p>
+                    <p class="sign">你的好朋友<br>lyy</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="nav">
+            <button id="prevBtn">上一页</button>
+            <button id="nextBtn">下一页</button>
+        </div>
+    </div>
+
+    <audio id="bgm" loop>
+        <source src="bgm.mp3" type="audio/mpeg">
+    
+
+    <script>
+        const correctPassword = '061121';
+        const passwordInput = document.getElementById('passwordInput');
+        const passwordBtn = document.getElementById('passwordBtn');
+        const tip = document.getElementById('tip');
+        const homePage = document.getElementById('homePage');
+        const loadingPage = document.getElementById('loadingPage');
+        const passwordPage = document.getElementById('passwordPage');
+        const heartFill = document.getElementById('heartFill');
+        const loadingText = document.getElementById('loadingText');
+        const musicBtn = document.getElementById('musicBtn');
+        const bgm = document.getElementById('bgm');
+        let musicPlaying = false;
+
+        const pages = document.querySelectorAll('.page');
+        let currentPage = 0;
+        let puzzleComplete = false;
+
+        function openGift() {
+            const input = passwordInput.value.trim();
+            if (input === correctPassword) {
+                passwordPage.style.opacity = '0';
+                passwordPage.style.pointerEvents = 'none';
+                loadingPage.style.opacity = '1';
+                loadingPage.style.pointerEvents = 'auto';
+
+                let progress = 0;
+                heartFill.style.width = '0%';
+                loadingText.textContent = '0%';
+                const timer = setInterval(() => {
+                    progress += Math.random() * 11 + 8;
+                    if (progress >= 100) {
+                        progress = 100;
+                        clearInterval(timer);
+                        heartFill.style.width = '100%';
+                        loadingText.textContent = '100%';
+                        setTimeout(()=>{
+                            loadingPage.style.opacity = '0';
+                            loadingPage.style.pointerEvents = 'none';
+                            homePage.style.opacity = '1';
+                            homePage.style.pointerEvents = 'auto';
+                            musicBtn.style.display = 'block';
+                            pages[0].classList.add('active');
+                        },200);
+                    } else {
+                        heartFill.style.width = progress + '%';
+                        loadingText.textContent = Math.floor(progress) + '%';
+                    }
+                },120);
+            } else {
+                tip.textContent = '密码不对，你觉得还能是啥！';
+            }
+        }
+        passwordBtn.addEventListener('click', openGift);
+        passwordInput.addEventListener('keydown', e=>{if(e.key==='Enter') openGift()});
+
+        musicBtn.onclick = function(){
+            if(musicPlaying){
+                bgm.pause();
+                musicBtn.textContent = '🎵';
+                musicPlaying = false;
+            }else{
+                bgm.play().then(()=>{
+                    musicPlaying = true;
+                    musicBtn.textContent = '🎶';
+                }).catch(()=>{});
+            }
+        }
+
+        document.getElementById('nextBtn').onclick = function(){
+            if(currentPage === 1 && !puzzleComplete){
+                alert("先把拼图拼好才能翻页！");
+                return;
+            }
+            if(currentPage < pages.length -1){
+                pages[currentPage].classList.remove('active','animate');
+                currentPage++;
+                pages[currentPage].classList.add('active','animate');
+            }
+        }
+        document.getElementById('prevBtn').onclick = function(){
+            if(currentPage > 0){
+                pages[currentPage].classList.remove('active','animate');
+                currentPage--;
+                pages[currentPage].classList.add('active','animate');
+            }
+        }
+
+        /* ========== 拼图逻辑 ========== */
+        const items = document.querySelectorAll('.puzzle-item');
+        const slots = document.querySelectorAll('.slot');
+        let dragged = null;
+        items.forEach(item=>{
+            item.setAttribute('draggable',true);
+            item.addEventListener('dragstart',e=>{
+                dragged = item;
+                e.dataTransfer.setData('text',item.dataset.id);
+            })
+        })
+        slots.forEach(slot=>{
+            slot.addEventListener('dragover',e=>e.preventDefault());
+            slot.addEventListener('drop',e=>{
+                e.preventDefault();
+                const id = e.dataTransfer.getData('text');
+                if(dragged && slot.dataset.slot === id){
+                    slot.innerHTML = dragged.innerHTML;
+                    dragged.style.visibility = 'hidden';
+                    checkPuzzle();
+                }
+            })
+        })
+        function checkPuzzle(){
+            let ok = true;
+            slots.forEach(s=>{if(!s.innerHTML) ok=false;})
+            if(ok){
+                puzzleComplete = true;
+                document.getElementById('puzzleSuccess').style.display='block';
+            }
+        }
+
+        /* ========== 认识天数 + 翻牌日历 ========== */
+        const meetDate = new Date('2021-09-19');
+
+        function updateDays() {
+            const now = new Date();
+            const start = new Date(meetDate.getFullYear(), meetDate.getMonth(), meetDate.getDate());
+            const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+            const diff = Math.floor((today - start) / (1000 * 60 * 60 * 24));
+
+            document.getElementById('daysCount').textContent = diff;
+
+            const year = meetDate.getFullYear();
+            const month = String(meetDate.getMonth() + 1).padStart(2, '0');
+            const day = String(meetDate.getDate()).padStart(2, '0');
+            const weekDays = ['星期日','星期一','星期二','星期三','星期四','星期五','星期六'];
+            const week = weekDays[meetDate.getDay()];
+
+            document.getElementById('calendarHead').textContent = year;
+            document.getElementById('calendarWeek').textContent = week;
+
+            document.getElementById('monthFace').textContent = month;
+            document.getElementById('monthBack').textContent = month;
+            document.getElementById('dayFace').textContent = day;
+            document.getElementById('dayBack').textContent = day;
+        }
+
+        function flipCalendar() {
+            const monthCard = document.getElementById('monthCard');
+            const dayCard = document.getElementById('dayCard');
+
+            monthCard.classList.remove('flipped');
+            dayCard.classList.remove('flipped');
+
+            setTimeout(()=>{
+                monthCard.classList.add('flipped');
+            }, 400);
+
+            setTimeout(()=>{
+                dayCard.classList.add('flipped');
+            }, 900);
+        }
+
+        window.addEventListener('load', ()=>{
+            updateDays();
+        });
+
+        /* 进入日历页时自动触发翻牌 */
+        const observer = new MutationObserver(()=>{
+            const calendarPage = document.getElementById('page3');
+            if(calendarPage.classList.contains('active')){
+                flipCalendar();
+                observer.disconnect();
+            }
+        });
+        observer.observe(document.getElementById('page3'), {attributes:true, attributeFilter:['class']});
+    </script>
+</body>
+</html>
